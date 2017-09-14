@@ -56,35 +56,37 @@ def test_DNAME():
 
 				target = resource_record_set['AliasTarget']['DNSName'][:-1]
 
-				# Enumerate (de-)coupled Route53 alias targets and CloudFront distributions
-				for item in cloudfront.list_distributions()['DistributionList']['Items']:
+				if 'cloudfront' in target:
 
-					# CloudFront distribution ID
-					distid = item['Id']
+					# Enumerate (de-)coupled Route53 alias targets and CloudFront distributions
+					for item in cloudfront.list_distributions()['DistributionList']['Items']:
 
-					# CloudFront disitrbution FQDN
-					dname = item['DomainName']
+						# CloudFront distribution ID
+						distid = item['Id']
 
-					# Flag and break if Route53 alias FQDN matches a CloudFront distribution FQDN
-					if target in dname:
-						flag +=1
-						break 
-				
-				# Check flag value and print appropriate response
-				if flag:
-					print ("[+] Zone:%-15s\tHost:%-20s\tAlias:%-30s\tDist:%-15s\tName:%-30s" % (zoneid,aname,target,distid,dname))
-				if not flag:
-					dname = "=" * 30
-					print ("[-] Zone:%-15s\tHost:%-20s\tAlias:%-30s\tDist:%-15s\tName:%-30s" % (zoneid,aname,target,distid,dname))
+						# CloudFront disitrbution FQDN
+						dname = item['DomainName']
+
+						# Flag and break if Route53 alias FQDN matches a CloudFront distribution FQDN
+						if target in dname:
+							flag +=1
+							break
+
+					# Check flag value and print appropriate response
+					if flag:
+						print ("[+] Zone:%-30s\tHost:%-30s\tAlias:%-30s\tDist:%-30s\tName:%-30s" % (zoneid,aname,target,distid,dname))
+					if not flag:
+						dname = "=" * 30
+						print ("[-] Zone:%-30s\tHost:%-30s\tAlias:%-30s\tDist:%-30s\tName:%-30s" % (zoneid,aname,target,distid,dname))
 
 if __name__ == "__main__":
 
-	parser = argparse.ArgumentParser(description='Route53/CloudFront Vulnerability Assessment Utility')
-	parser.add_argument("-t", "--type", action="store", dest="value", help="Enumerate decoupled CNAME's")
+	parser = argparse.ArgumentParser(add_help=True, description='Route53/CloudFront Vulnerability Assessment Utility')
+	parser.add_argument("-t", "--type", action="store", required=True)
 
-	args = parser.parse_args()
+	args = vars(parser.parse_args())
 
-	if "cname" in args.value: test_CNAME()
-	elif "dname" in args.value: test_DNAME()
+	if args['type'] == 'cname': test_CNAME()
+	if args['type'] == 'dname': test_DNAME()
 
-# EOF
+#EOF
