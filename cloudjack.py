@@ -17,79 +17,76 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import argparse
 import boto3
 
-def test_CNAME():
+def cloudjack():
 
-        # Initialize Route53 and CloudFront clients
-        route53 = boto3.client('route53')
-        cloudfront = boto3.client('cloudfront')
+	# Initialize Route53 and CloudFront clients
+	route53 = boto3.client('route53')
+	cloudfront = boto3.client('cloudfront')
 
-        # Initialize local variables
-        cname = dname = flag = name = target = None
+	# Initialize local variables
+	aname = cname = dname = target = None
+	cflag =  dflag = None
+	zoneid = zonetype = None
 
-def test_DNAME():
+	# Enumerate and iterate through all Route53 hosted zone ID's
+	for hosted_zone in sorted(route53.list_hosted_zones()['HostedZones']):
 
-        # Initialize Route53 and CloudFront clients
-        route53 = boto3.client('route53')
-        cloudfront = boto3.client('cloudfront')
+		zoneid = hosted_zone['Id'].split("/")[2]
 
-        # Initialize local variables
-        dname = flag = name = target = zoneid = zonetype = None
+		if hosted_zone['Config']['PrivateZone']: zonetype = "Private"
+		else: zonetype="Public"
 
-        # Enumerate and iterate through all Route53 hosted zone ID's
-        for hosted_zone in sorted(route53.list_hosted_zones()['HostedZones']):
+		for resource_record_set in route53.list_resource_record_sets(HostedZoneId=zoneid)['ResourceRecordSets']:
 
-                zoneid = hosted_zone['Id'].split("/")[2]
+			# Set distribution flag to zero on each iteration
+			dflag = 0
 
-                if hosted_zone['Config']['PrivateZone']: zonetype = "Private"
-                else: zonetype="Public"
+			# Set name variable to Route53 A record FQDN omitting trailing dot
+			aname = resource_record_set['Name'][:-1]
 
-                for resource_record_set in route53.list_resource_record_sets(HostedZoneId=zoneid)['ResourceRecordSets']:
+			# Set target variable to the Route53 alias FQDN of CloudFront distribution
+			if 'AliasTarget' in resource_record_set and 'DNSName' in resource_record_set['AliasTarget']:
 
-                        # Set flag to zero on each iteration
-                        flag = 0
+				target = resource_record_set['AliasTarget']['DNSName'][:-1]
 
-                        # Set name variable to Route53 A record FQDN omitting trailing dot
-                        aname = resource_record_set['Name'][:-1]
+				if 'cloudfront' in target:
 
-                        # Set target variable to the Route53 alias FQDN of CloudFront distribution
-                        if 'AliasTarget' in resource_record_set and 'DNSName' in resource_record_set['AliasTarget']:
+					# Set CNAME flag to zero on each iteration
+					cflag = 0
 
-                                target = resource_record_set['AliasTarget']['DNSName'][:-1]
+					# Enumerate (de-)coupled Route53 alias targets and CloudFront distributions
+					for item in cloudfront.list_distributions()['DistributionList']['Items']:
 
-                                if 'cloudfront' in target:
+						# CloudFront distribution ID
+						distid = item['Id']
 
-                                        # Enumerate (de-)coupled Route53 alias targets and CloudFront distributions
-                                        for item in cloudfront.list_distributions()['DistributionList']['Items']:
+						# CloudFront disitrbution FQDN
+						dname = item['DomainName']
 
-                                                # CloudFront distribution ID
-                                                distid = item['Id']
+						# Flag and break if Route53 alias FQDN matches a CloudFront distribution FQDN
+						if target in dname:
+							dflag +=1
 
-                                                # CloudFront disitrbution FQDN
-                                                dname = item['DomainName']
+						if item['Aliases']['Quantity']:
 
-                                                # Flag and break if Route53 alias FQDN matches a CloudFront distribution FQDN
-                                                if target in dname:
-                                                        flag +=1
-                                                        break
+							for cname in item['Aliases']['Items']:
 
-                                        # Check flag value and print appropriate response
-                                        if flag:
-                                                print ("[+] Zone:%-20s\tType:%-10s\tHost:%-50s\tAlias:%-25s\tDist:%-15s\tName:%-25s" % (zoneid,zonetype,aname,target,distid,dname))
-                                        if not flag:
-                                                dname = "=" * 50
-                                                print ("[+] Zone:%-20s\tType:%-10s\tHost:%-50s\tAlias:%-25s\tDist:%-15s\tName:%-25s" % (zoneid,zonetype,aname,target,distid,dname))
+								if cname in aname:
+									cflag+=1
+									break
+
+					# Check flag values and print appropriate response for [+] secure or [-] insecure
+					if dflag and cflag:
+						print ("[+] Zone:%-10s\tType:%-10s\tHost:%-10s\tAlias:%-10s\tDist:%-10s\tName:%-10s\tCNAME:%s" % (zoneid,zonetype,aname,target,distid,dname,cname))
+					if dflag and not cflag:
+						cname = "FAIL"
+						print ("[-] Zone:%-10s\tType:%-10s\tHost:%-10s\tAlias:%-10s\tDist:%-10s\tName:%-10s\tCNAME:%s" % (zoneid,zonetype,aname,target,distid,dname,cname))
+					if not dflag:
+						cname = dname = "FAIL"
+						print ("[-] Zone:%-10s\tType:%-10s\tHost:%-10s\tAlias:%-10s\tDist:%-10s\tName:%-10s\tCNAME:%s" % (zoneid,zonetype,aname,target,distid,dname,cname))
 
 if __name__ == "__main__":
 
-        parser = argparse.ArgumentParser(add_help=True, description='Route53/CloudFront Vulnerability Assessment Utility')
-        parser.add_argument("-t", "--type", action="store", required=True)
-
-        args = vars(parser.parse_args())
-
-        if args['type'] == 'cname': test_CNAME()
-        if args['type'] == 'dname': test_DNAME()
-
-#EOF
+	cloudjack()
