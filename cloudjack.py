@@ -22,71 +22,74 @@ import boto3
 
 def test_CNAME():
 
-	# Initialize Route53 and CloudFront clients
-	route53 = boto3.client('route53')
-	cloudfront = boto3.client('cloudfront')
+        # Initialize Route53 and CloudFront clients
+        route53 = boto3.client('route53')
+        cloudfront = boto3.client('cloudfront')
 
-	# Initialize local variables
-	cname = dname = flag = name = target = None
+        # Initialize local variables
+        cname = dname = flag = name = target = None
 
 def test_DNAME():
 
-	# Initialize Route53 and CloudFront clients
-	route53 = boto3.client('route53')
-	cloudfront = boto3.client('cloudfront')
+        # Initialize Route53 and CloudFront clients
+        route53 = boto3.client('route53')
+        cloudfront = boto3.client('cloudfront')
 
-	# Initialize local variables
-	dname = flag = name = target = None
+        # Initialize local variables
+        dname = flag = name = target = zoneid = zonetype = None
 
-	# Enumerate and iterate through all Route53 hosted zone ID's
-	for hosted_zone in route53.list_hosted_zones()['HostedZones']:
+        # Enumerate and iterate through all Route53 hosted zone ID's
+        for hosted_zone in sorted(route53.list_hosted_zones()['HostedZones']):
 
-		zoneid = hosted_zone['Id'].split("/")[2]
+                zoneid = hosted_zone['Id'].split("/")[2]
 
-		for resource_record_set in route53.list_resource_record_sets(HostedZoneId=zoneid)['ResourceRecordSets']:
+                if hosted_zone['Config']['PrivateZone']: zonetype = "Private"
+                else: zonetype="Public"
 
-			# Set flag to zero on each iteration
-			flag = 0
+                for resource_record_set in route53.list_resource_record_sets(HostedZoneId=zoneid)['ResourceRecordSets']:
 
-			# Set name variable to Route53 A record FQDN omitting trailing dot
-			aname = resource_record_set['Name'][:-1]
+                        # Set flag to zero on each iteration
+                        flag = 0
 
-			# Set target variable to the Route53 alias FQDN of CloudFront distribution
-			if 'AliasTarget' in resource_record_set and 'DNSName' in resource_record_set['AliasTarget']:
+                        # Set name variable to Route53 A record FQDN omitting trailing dot
+                        aname = resource_record_set['Name'][:-1]
 
-				target = resource_record_set['AliasTarget']['DNSName'][:-1]
+                        # Set target variable to the Route53 alias FQDN of CloudFront distribution
+                        if 'AliasTarget' in resource_record_set and 'DNSName' in resource_record_set['AliasTarget']:
 
-				if 'cloudfront' in target:
+                                target = resource_record_set['AliasTarget']['DNSName'][:-1]
 
-					# Enumerate (de-)coupled Route53 alias targets and CloudFront distributions
-					for item in cloudfront.list_distributions()['DistributionList']['Items']:
+                                if 'cloudfront' in target:
 
-						# CloudFront distribution ID
-						distid = item['Id']
+                                        # Enumerate (de-)coupled Route53 alias targets and CloudFront distributions
+                                        for item in cloudfront.list_distributions()['DistributionList']['Items']:
 
-						# CloudFront disitrbution FQDN
-						dname = item['DomainName']
+                                                # CloudFront distribution ID
+                                                distid = item['Id']
 
-						# Flag and break if Route53 alias FQDN matches a CloudFront distribution FQDN
-						if target in dname:
-							flag +=1
-							break
+                                                # CloudFront disitrbution FQDN
+                                                dname = item['DomainName']
 
-					# Check flag value and print appropriate response
-					if flag:
-						print ("[+] Zone:%-30s\tHost:%-30s\tAlias:%-30s\tDist:%-30s\tName:%-30s" % (zoneid,aname,target,distid,dname))
-					if not flag:
-						dname = "=" * 30
-						print ("[-] Zone:%-30s\tHost:%-30s\tAlias:%-30s\tDist:%-30s\tName:%-30s" % (zoneid,aname,target,distid,dname))
+                                                # Flag and break if Route53 alias FQDN matches a CloudFront distribution FQDN
+                                                if target in dname:
+                                                        flag +=1
+                                                        break
+
+                                        # Check flag value and print appropriate response
+                                        if flag:
+                                                print ("[+] Zone:%-20s\tType:%-10s\tHost:%-50s\tAlias:%-25s\tDist:%-15s\tName:%-25s" % (zoneid,zonetype,aname,target,distid,dname))
+                                        if not flag:
+                                                dname = "=" * 50
+                                                print ("[+] Zone:%-20s\tType:%-10s\tHost:%-50s\tAlias:%-25s\tDist:%-15s\tName:%-25s" % (zoneid,zonetype,aname,target,distid,dname))
 
 if __name__ == "__main__":
 
-	parser = argparse.ArgumentParser(add_help=True, description='Route53/CloudFront Vulnerability Assessment Utility')
-	parser.add_argument("-t", "--type", action="store", required=True)
+        parser = argparse.ArgumentParser(add_help=True, description='Route53/CloudFront Vulnerability Assessment Utility')
+        parser.add_argument("-t", "--type", action="store", required=True)
 
-	args = vars(parser.parse_args())
+        args = vars(parser.parse_args())
 
-	if args['type'] == 'cname': test_CNAME()
-	if args['type'] == 'dname': test_DNAME()
+        if args['type'] == 'cname': test_CNAME()
+        if args['type'] == 'dname': test_DNAME()
 
 #EOF
