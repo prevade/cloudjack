@@ -16,77 +16,119 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#    Usage: $ python cloudjack.py [type: TEXT|json]
+#    ex1: $ python cloudjack.py
+#    ex2: $ python cloudjack.py json
 
 import boto3
+import json
+import sys
 
-def cloudjack():
+try:
+    output_type = sys.argv[1]
+except IndexError:
+    output_type = 'text'
 
-	# Initialize Route53 and CloudFront clients
-	route53 = boto3.client('route53')
-	cloudfront = boto3.client('cloudfront')
+def cloudjack(output_type):
 
-	# Initialize local variables
-	aname = cname = dname = target = None
-	cflag =  dflag = None
-	zoneid = zonetype = None
+        # in ~/.aws/credentials, you need
+        # [cloud-jacker]
+        # aws_access_key_id=foo
+        # aws_secret_access_key=bar
+        session    = boto3.Session(profile_name='cloud-jacker') # the name of the section in ~/.aws/credentials
 
-	# Enumerate and iterate through all Route53 hosted zone ID's
-	for hosted_zone in sorted(route53.list_hosted_zones()['HostedZones']):
+        # Initialize Route53 and CloudFront clients
+        route53    = session.client('route53')
+        cloudfront = session.client('cloudfront')
 
-		zoneid = hosted_zone['Id'].split("/")[2]
+        # Initialize local variables
+        aname = cname = dname = target = None
+        cflag = dflag = flag = None
+        zoneid = zonetype = None
+        #results = output_type = None
+        results = None
+        results = []
 
-		if hosted_zone['Config']['PrivateZone']: zonetype = "Private"
-		else: zonetype="Public"
+        #output_type = 'text'
 
-		for resource_record_set in route53.list_resource_record_sets(HostedZoneId=zoneid)['ResourceRecordSets']:
+        # Enumerate and iterate through all Route53 hosted zone ID's
+        for hosted_zone in sorted(route53.list_hosted_zones()['HostedZones']):
 
-			# Set distribution flag to zero on each iteration
-			dflag = 0
+                zoneid = hosted_zone['Id'].split("/")[2]
 
-			# Set name variable to Route53 A record FQDN omitting trailing dot
-			aname = resource_record_set['Name'][:-1]
+                if hosted_zone['Config']['PrivateZone']: zonetype = "Private"
+                else: zonetype="Public"
 
-			# Set target variable to the Route53 alias FQDN of CloudFront distribution
-			if 'AliasTarget' in resource_record_set and 'DNSName' in resource_record_set['AliasTarget']:
+                for resource_record_set in route53.list_resource_record_sets(HostedZoneId=zoneid)['ResourceRecordSets']:
 
-				target = resource_record_set['AliasTarget']['DNSName'][:-1]
+                        # Set distribution flag to zero on each iteration
+                        dflag = 0
 
-				if 'cloudfront' in target:
+                        # Set name variable to Route53 A record FQDN omitting trailing dot
+                        aname = resource_record_set['Name'][:-1]
 
-					# Set CNAME flag to zero on each iteration
-					cflag = 0
+                        # Set target variable to the Route53 alias FQDN of CloudFront distribution
+                        if 'AliasTarget' in resource_record_set and 'DNSName' in resource_record_set['AliasTarget']:
 
-					# Enumerate (de-)coupled Route53 alias targets and CloudFront distributions
-					for item in cloudfront.list_distributions()['DistributionList']['Items']:
+                                target = resource_record_set['AliasTarget']['DNSName'][:-1]
 
-						# CloudFront distribution ID
-						distid = item['Id']
+                                if 'cloudfront' in target:
 
-						# CloudFront disitrbution FQDN
-						dname = item['DomainName']
+                                        # Set CNAME flag to zero on each iteration
+                                        cflag = 0
 
-						# Flag and break if Route53 alias FQDN matches a CloudFront distribution FQDN
-						if target in dname:
-							dflag +=1
+                                        # Enumerate (de-)coupled Route53 alias targets and CloudFront distributions
+                                        for item in cloudfront.list_distributions()['DistributionList']['Items']:
 
-						if item['Aliases']['Quantity']:
+                                                # CloudFront distribution ID
+                                                distid = item['Id']
 
-							for cname in item['Aliases']['Items']:
+                                                # CloudFront disitrbution FQDN
+                                                dname = item['DomainName']
 
-								if cname in aname:
-									cflag+=1
-									break
+                                                # Flag and break if Route53 alias FQDN matches a CloudFront distribution FQDN
+                                                if target in dname:
+                                                        dflag +=1
 
-					# Check flag values and print appropriate response for [+] secure or [-] insecure
-					if dflag and cflag:
-						print ("[+] Zone:%-10s\tType:%-10s\tHost:%-10s\tAlias:%-10s\tDist:%-10s\tName:%-10s\tCNAME:%s" % (zoneid,zonetype,aname,target,distid,dname,cname))
-					if dflag and not cflag:
-						cname = "FAIL"
-						print ("[-] Zone:%-10s\tType:%-10s\tHost:%-10s\tAlias:%-10s\tDist:%-10s\tName:%-10s\tCNAME:%s" % (zoneid,zonetype,aname,target,distid,dname,cname))
-					if not dflag:
-						cname = dname = "FAIL"
-						print ("[-] Zone:%-10s\tType:%-10s\tHost:%-10s\tAlias:%-10s\tDist:%-10s\tName:%-10s\tCNAME:%s" % (zoneid,zonetype,aname,target,distid,dname,cname))
+                                                if item['Aliases']['Quantity']:
+
+                                                        for cname in item['Aliases']['Items']:
+
+                                                                if cname in aname:
+                                                                        cflag+=1
+                                                                        break
+                                                if dflag and cflag:
+                                                        flag = '+'
+                                                if dflag and not cflag:
+                                                        flag = '-'
+                                                        cname = "FAIL"
+                                                if not dflag:
+                                                        flag = '-'
+                                                        cname = dname = "FAIL"
+
+                                                data = {
+                                                    'zoneid':   zoneid,
+                                                    'zonetype': zonetype,
+                                                    'aname':    aname,
+                                                    'cname':    cname,
+                                                    'dname':    dname,
+                                                    'target':   target,
+                                                    'distid':   distid,
+                                                    'flag':     flag,
+                                                   }
+
+                                                results.append(data)
+                display(results, output_type)
+
+
+def display(results, output_type):
+    if output_type == 'json':
+        print json.dumps(results, indent=4, sort_keys=True)
+    else:
+        for result in results:
+            #py3 print ("{flag} Zone: {zoneid}\tType: {zonetype}\tHost: {aname}\tAlias: {target}\tDist: {distid}\tName: {dname}\tCNAME: {cname}".format_map(result))
+            print ("[{flag}] Zone: {zoneid}\tType: {zonetype}\tHost: {aname}\tAlias: {target}\tDist: {distid}\tName: {dname}\tCNAME: {cname}".format(**result))
 
 if __name__ == "__main__":
-
-	cloudjack()
+        cloudjack(output_type)
