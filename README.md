@@ -25,8 +25,8 @@ Usage:
     $ python cloudjack.py [type: TEXT|json]
 
 Examples:
-   # $ python cloudjack.py
-   # $ python cloudjack.py json
+   - $ python cloudjack.py
+   - $ python cloudjack.py json
 
 References:
 
