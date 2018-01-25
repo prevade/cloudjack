@@ -12,22 +12,32 @@ Requirements:
 
 1. AWS IAM access key ID and corresponding secret key
 2. AWS CLI installation configured with access key ID and secret key
+    in ~/.aws/credentials, you need
+        [cloud-jacker]
+        aws_access_key_id=<ACCESS_KEY>
+        aws_secret_access_key=<SECRET>
 3. AWS IAM policy allowing Route53 ListHostedZones and ListResourceRecordSets actions
 4. AWS IAM policy allowing CloudFront ListDistributions actions
 5. Python and python boto3 package
+    - pip install boto3
 
 Usage:
+    $ python cloudjack.py [type: TEXT|json]
 
-user@host: python cloudjack.py
+Examples:
+   - $ python cloudjack.py
+   - $ python cloudjack.py json
 
 References:
 
-http://docs.aws.amazon.com/Route53/latest/APIReference/API_ListHostedZones.html
-http://docs.aws.amazon.com/Route53/latest/APIReference/API_ListResourceRecordSets.html
-http://docs.aws.amazon.com/cloudfront/latest/APIReference/API_ListDistributions.html
-http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+- http://docs.aws.amazon.com/Route53/latest/APIReference/API_ListHostedZones.html
+- http://docs.aws.amazon.com/Route53/latest/APIReference/API_ListResourceRecordSets.html
+- http://docs.aws.amazon.com/cloudfront/latest/APIReference/API_ListDistributions.html
+- http://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
 
 Wishlist:
 
 1. Offensive reconnaisance and exploitation features
 2. Parsable output formatting options (json, xml, csv)
+3. Detailed instructions for setting up ~/.aws and AWS client
+4. Detailed instructions in setting up IAM policies
