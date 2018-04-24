@@ -40,7 +40,5 @@ References:
 
 Wishlist:
 
-1. Offensive reconnaisance and exploitation features
-2. Parsable output formatting options (json, xml, csv)
-3. Detailed instructions for setting up ~/.aws and AWS client
-4. Detailed instructions in setting up IAM policies
+1. ASsess for S3/CF de-coupling
+2. Offensive reconnaisance and exploitation features
