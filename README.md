@@ -40,5 +40,5 @@ References:
 
 Wishlist:
 
-1. ASsess for S3/CF de-coupling
+1. Assess S3/CF de-coupling
 2. Offensive reconnaisance and exploitation features
