@@ -2,7 +2,7 @@
 
 #    CloudJack: Route53/CloudFront Vulnerability Assessment Utility
 #
-#    Copyright 2017 Prevade Cybersecurity
+#    Copyright 2018 Prevade Cybersecurity
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -17,68 +17,102 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#    Usage: $ python cloudjack.py [type: TEXT|json]
-#    ex1: $ python cloudjack.py
-#    ex2: $ python cloudjack.py json
+#    Usage: $ python cloudjack.py 
 
 import boto3
 import json
 import sys
+import argparse
 
-try:
-    output_type = sys.argv[1]
-except IndexError:
-    output_type = 'text'
+def init_clients(sess):
 
-def cloudjack(output_type):
+        r = sess.client('route53')
+        c = sess.client('cloudfront')
+	s = sess.client('s3')
 
-        # in ~/.aws/credentials, you need
-        # [cloud-jacker]
-        # aws_access_key_id=foo
-        # aws_secret_access_key=bar
-        session    = boto3.Session(profile_name='cloud-jacker') # the name of the section in ~/.aws/credentials
+	return (r, c, s)
 
-        # Initialize Route53 and CloudFront clients
-        route53    = session.client('route53')
-        cloudfront = session.client('cloudfront')
+def main():
+
+	__title__ = "CloudJack"
+	__version__ = "1.0.2"
+
+	msg = __title__ + " v" + __version__
+
+	banner = """
+  oooooooo8 o888                              oooo ooooo                      oooo        
+o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   888  ooooo 
+888          888 888     888 888   888 888    888   888   ooooo888 888     888 888o888    
+888o     oo  888 888     888 888   888 888    888   888 888    888 888         8888 88o   
+ 888oooo88  o888o  88ooo88    888o88 8o  88ooo888o  888  88ooo88 8o  88ooo888 o888o o888o 
+						 8o888"""
+
+	parser = argparse.ArgumentParser(add_help=False,formatter_class=argparse.RawTextHelpFormatter,epilog=msg)
+	parser.add_argument('-h', '--help', dest='show_help', action='store_true', help='Display this message and exit\n\n')
+	parser.add_argument('-o', '--output', help='Output format, defaults to JSON', type=str)
+	parser.add_argument('-p', '--profile', help='AWS profile, defaults to [default]', type=str)
+	parser.set_defaults(show_help='False')
+	args = parser.parse_args()
+
+	if args.show_help is True:
+        	print ''
+        	print parser.format_help()
+        	sys.exit(0)
+
+	if args.profile:
+		profile = args.profile
+	else:
+		profile = "default"
+
+	if args.output:
+		output = args.output
+	else:
+		output = "json"
+
+	print banner + "\n\t\t\t" + msg + "\n"
+
+	session = boto3.Session(profile_name=profile) 
+
+        # Initialize Route53, CloudFront, and S3 boto3 clients
+
+	(route53, cloudfront, s3) = init_clients(session)
 
         # Initialize local variables
-        aname = cname = dname = target = None
-        cflag = dflag = flag = None
-        zoneid = zonetype = None
-        #results = output_type = None
-        results = None
+        aname = cname = dname = target = cflag = dflag = status = zoneid = zonetype = None
         results = []
-
-        #output_type = 'text'
 
         # Enumerate and iterate through all Route53 hosted zone ID's
         for hosted_zone in sorted(route53.list_hosted_zones()['HostedZones']):
 
+		# Parse ZoneID result
                 zoneid = hosted_zone['Id'].split("/")[2]
 
+		# Determine if zone is public or private for informational purposes
                 if hosted_zone['Config']['PrivateZone']: zonetype = "Private"
                 else: zonetype="Public"
 
+		# Iterate through all Route53 resource records sets
                 for resource_record_set in route53.list_resource_record_sets(HostedZoneId=zoneid)['ResourceRecordSets']:
 
                         # Set distribution flag to zero on each iteration
                         dflag = 0
 
-                        # Set name variable to Route53 A record FQDN omitting trailing dot
+                        # Set name variable to Route53 A record FQDN and truncate trailing dot
                         aname = resource_record_set['Name'][:-1]
 
                         # Set target variable to the Route53 alias FQDN of CloudFront distribution
                         if 'AliasTarget' in resource_record_set and 'DNSName' in resource_record_set['AliasTarget']:
 
+				# Set target variable and truncate string
                                 target = resource_record_set['AliasTarget']['DNSName'][:-1]
 
+				# Determine if the target is a cloudfront distribution
                                 if 'cloudfront' in target:
 
                                         # Set CNAME flag to zero on each iteration
                                         cflag = 0
 
-                                        # Enumerate (de-)coupled Route53 alias targets and CloudFront distributions
+                                        # Enumerate de-coupled Route53 alias targets and CloudFront distributions
                                         for item in cloudfront.list_distributions()['DistributionList']['Items']:
 
                                                 # CloudFront distribution ID
@@ -91,22 +125,27 @@ def cloudjack(output_type):
                                                 if target in dname:
                                                         dflag +=1
 
+						# Flag and break if Route53 A record matches a CloudFront CNAME
                                                 if item['Aliases']['Quantity']:
 
+							# Determine if the Route53 alias matches a corresponding CloudFront CNAME
                                                         for cname in item['Aliases']['Items']:
 
                                                                 if cname in aname:
                                                                         cflag+=1
                                                                         break
-                                                if dflag and cflag:
-                                                        flag = '+'
-                                                if dflag and not cflag:
-                                                        flag = '-'
-                                                        cname = "FAIL"
-                                                if not dflag:
-                                                        flag = '-'
-                                                        cname = dname = "FAIL"
 
+						# A pair of flags indicates Route53 and CloudFront are NOT decoupled 
+                                                if dflag and cflag:
+                                                        status = 'PASS'
+                                                if dflag and not cflag:
+                                                        status = 'FAIL'
+                                                        cname = None
+                                                if not dflag:
+                                                        status = 'FAIL'
+                                                        cname = dname = None
+
+						# Create a JSON object with Route53 and CloudFront attributes
                                                 data = {
                                                     'zoneid':   zoneid,
                                                     'zonetype': zonetype,
@@ -115,20 +154,17 @@ def cloudjack(output_type):
                                                     'dname':    dname,
                                                     'target':   target,
                                                     'distid':   distid,
-                                                    'flag':     flag,
+                                                    'status':   status,
                                                    }
 
+						# Push each iteration onto results array
                                                 results.append(data)
-                display(results, output_type)
 
-
-def display(results, output_type):
-    if output_type == 'json':
-        print json.dumps(results, indent=4, sort_keys=True)
-    else:
-        for result in results:
-            #py3 print ("{flag} Zone: {zoneid}\tType: {zonetype}\tHost: {aname}\tAlias: {target}\tDist: {distid}\tName: {dname}\tCNAME: {cname}".format_map(result))
-            print ("[{flag}] Zone: {zoneid}\tType: {zonetype}\tHost: {aname}\tAlias: {target}\tDist: {distid}\tName: {dname}\tCNAME: {cname}".format(**result))
+        	if output == "text":
+			for result in results:
+		            print ("Status: {status}\tZone: {zoneid}\tType: {zonetype}\tHost: {aname}\tAlias: {target}\tDist: {distid}\tName: {dname}\tCNAME: {cname}".format(**result))
+		else:
+			print json.dumps(results, indent=4, sort_keys=True)
 
 if __name__ == "__main__":
-        cloudjack(output_type)
+        main()
