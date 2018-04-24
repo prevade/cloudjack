@@ -22,11 +22,14 @@ Requirements:
     - pip install boto3
 
 Usage:
-    $ python cloudjack.py [type: TEXT|json]
+    $ python cloudjack.py -o [text|json] -p [profile]
 
 Examples:
-   - $ python cloudjack.py
-   - $ python cloudjack.py json
+   - $ python cloudjack.py -o json -p default
+   - $ python cloudjack.py -o text -p default
+   - $ python cloudjack.py -o json -p myprofile 
+   - $ python cloudjack.py -o text -p myprofile
+
 
 References:
 
