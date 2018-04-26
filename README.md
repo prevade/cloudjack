@@ -12,10 +12,6 @@ Requirements:
 
 1. AWS IAM access key ID and corresponding secret key
 2. AWS CLI installation configured with access key ID and secret key
-    in ~/.aws/credentials, you need
-        [cloud-jacker]
-        aws_access_key_id=<ACCESS_KEY>
-        aws_secret_access_key=<SECRET>
 3. AWS IAM policy allowing Route53 ListHostedZones and ListResourceRecordSets actions
 4. AWS IAM policy allowing CloudFront ListDistributions actions
 5. Python and python boto3 package
