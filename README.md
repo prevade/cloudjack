@@ -39,7 +39,7 @@ Examples:
 
    Wishlist:
 
-   1. Assess S3/CloudFront de-coupling
+   1. Assess S3/CloudFront decoupling
    2. Offensive reconnaissance and exploitation features
 
 References:
