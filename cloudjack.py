@@ -133,47 +133,45 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
                         if target in dname:
                             dflag += 1
 
-                        # Flag and break if Route53 A record matches a CloudFront CNAME
-                        if item['Aliases']['Quantity']:
+                            # Flag and break if Route53 A record matches a CloudFront CNAME
+                            if item['Aliases']['Quantity']:
 
-                            # Determine if the Route53 alias matches a corresponding CloudFront CNAME
-                            for cname in item['Aliases']['Items']:
+                                # Determine if the Route53 alias matches a corresponding CloudFront CNAME
+                                for cname in item['Aliases']['Items']:
 
-                                if cname in aname:
-                                    cflag += 1
-                                    break
+                                    if cname in aname:
+                                        cflag += 1
+                                        break
 
-                        # A pair of flags indicates Route53 and CloudFront are NOT decoupled
-                        if dflag and cflag:
-                            status = 'PASS'
-                        if dflag and not cflag:
-                            status = 'FAIL'
-                            cname = None
-                        if not dflag:
-                            status = 'FAIL'
-                            cname = dname = None
+                    # A pair of flags indicates Route53 and CloudFront are NOT decoupled
+                    if dflag and cflag:
+                        status = 'PASS'
+                    if dflag and not cflag:
+                        status = 'FAIL'
+                        cname = None
+                    if not dflag:
+                        status = 'FAIL'
+                        cname = dname = None
+                    # Create a JSON object with Route53 and CloudFront attributes
+                    data = {
+                        'zoneid':   zoneid,
+                        'zonetype': zonetype,
+                        'aname':    aname,
+                        'cname':    cname,
+                        'dname':    dname,
+                        'target':   target,
+                        'distid':   distid,
+                        'status':   status,
+                    }
+                    # Push each iteration onto results array
+                    results.append(data)
 
-                        # Create a JSON object with Route53 and CloudFront attributes
-                        data = {
-                            'zoneid':   zoneid,
-                            'zonetype': zonetype,
-                            'aname':    aname,
-                            'cname':    cname,
-                            'dname':    dname,
-                            'target':   target,
-                            'distid':   distid,
-                            'status':   status,
-                        }
-
-                        # Push each iteration onto results array
-                        results.append(data)
-
-        if output == "text":
-            for result in results:
-                print ("Status: {status}\tZone: {zoneid}\tType: {zonetype}\tHost: {aname}\tAlias: {target}\tDist: {distid}\tName: {dname}\tCNAME: {cname}".format(
-                    **result))
-        else:
-            print json.dumps(results, indent=4, sort_keys=True)
+    if output == "text":
+        for result in results:
+            print ("Status: {status}\tZone: {zoneid}\tType: {zonetype}\tHost: {aname}\tAlias: {target}\tDist: {distid}\tName: {dname}\tCNAME: {cname}".format(
+                **result))
+    else:
+        print json.dumps(results, indent=4, sort_keys=True)
 
 
 if __name__ == "__main__":
