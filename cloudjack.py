@@ -37,7 +37,7 @@ def init_clients(sess):
 def main():
 
     __title__ = "CloudJack"
-    __version__ = "1.0.2"
+    __version__ = "1.0.4"
 
     msg = __title__ + " v" + __version__
 
