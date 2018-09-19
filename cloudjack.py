@@ -49,15 +49,14 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
  888oooo88  o888o  88ooo88    888o88 8o  88ooo888o  888  88ooo88 8o  88ooo888 o888o o888o 
 						 8o888"""
 
-    parser = argparse.ArgumentParser(
-        add_help=False, formatter_class=argparse.RawTextHelpFormatter, epilog=msg)
-    parser.add_argument('-h', '--help', dest='show_help',
-                        action='store_true', help='Display this message and exit\n\n')
-    parser.add_argument(
-        '-o', '--output', help='Output format, defaults to JSON', type=str)
-    parser.add_argument('-p', '--profile',
-                        help='AWS profile, defaults to [default]', type=str)
+    parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.RawTextHelpFormatter, epilog=msg)
+
+    parser.add_argument('-h', '--help', dest='show_help', action='store_true', help='Display this message and exit\n\n')
+    parser.add_argument('-o', '--output', help='Output format, defaults to JSON', type=str)
+    parser.add_argument('-p', '--profile', help='AWS profile, defaults to [default]', type=str)
+    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output, display banner and real-time analysis updates')
     parser.set_defaults(show_help='False')
+
     args = parser.parse_args()
 
     if args.show_help is True:
@@ -75,7 +74,8 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
     else:
         output = "json"
 
-    print banner + "\n\t\t\t" + msg + "\n"
+    if args.verbose:
+		print banner + "\n\t\t\t" + msg + "\n"
 
     session = boto3.Session(profile_name=profile)
 
@@ -92,6 +92,8 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
 
         # Parse ZoneID result
         zoneid = hosted_zone['Id'].split("/")[2]
+    	if args.verbose:
+			print ("Analyzing Route53 ZoneID %s...\n" % zoneid)
 
         # Determine if zone is public or private for informational purposes
         if hosted_zone['Config']['PrivateZone']:
