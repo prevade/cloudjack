@@ -46,8 +46,9 @@ def main():
 o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   888  ooooo 
 888          888 888     888 888   888 888    888   888   ooooo888 888     888 888o888    
 888o     oo  888 888     888 888   888 888    888   888 888    888 888         8888 88o   
- 888oooo88  o888o  88ooo88    888o88 8o  88ooo888o  888  88ooo88 8o  88ooo888 o888o o888o 
-						 8o888"""
+ 888oooo88  o888o  88ooo88    888o88 8o  88ooo888o  888  88ooo88 8o  88ooo888 o888o o888o
+                                                  8o888
+"""
 
     parser = argparse.ArgumentParser(add_help=False, formatter_class=argparse.RawTextHelpFormatter, epilog=msg)
 
@@ -75,7 +76,7 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
         output = "json"
 
     if args.verbose:
-		print banner + "\n\t\t\t" + msg + "\n"
+        print("%s \n\t\t\t%s\n" % (banner, msg))
 
     session = boto3.Session(profile_name=profile)
 
@@ -92,8 +93,9 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
 
         # Parse ZoneID result
         zoneid = hosted_zone['Id'].split("/")[2]
-    	if args.verbose:
-			print ("Analyzing Route53 ZoneID %s...\n" % zoneid)
+
+        if args.verbose:
+            print ("Analyzing Route53 ZoneID %s...\n" % zoneid)
 
         # Determine if zone is public or private for informational purposes
         if hosted_zone['Config']['PrivateZone']:
