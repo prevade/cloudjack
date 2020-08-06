@@ -1,6 +1,6 @@
 # CloudJack 
 
-### AWS Route53/CloudFront Vulnerability Assessment Utility
+### AWS Route53/CloudFront/S3 Vulnerability Assessment Utility
 
 CloudJack assesses AWS accounts for subdomain hijacking vulnerabilities as a result of decoupled Route53 and CloudFront configurations. This vulnerability exists if a Route53 alias references 1) a deleted CloudFront web distribution or 2) an active CloudFront web distribution with deleted CNAME(s).
 
@@ -41,6 +41,10 @@ Examples:
 
    1. Assess S3/CloudFront decoupling
    2. Offensive reconnaissance and exploitation features
+
+Notes:
+
+Python3 now supported. Use cloudjack-p2.py for Python2.
 
 References:
 
