@@ -61,8 +61,8 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
     args = parser.parse_args()
 
     if args.show_help is True:
-        print('')
-        print(parser.format_help())
+        print ''
+        print parser.format_help()
         sys.exit(0)
 
     if args.profile:
@@ -76,7 +76,7 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
         output = "json"
 
     if args.verbose:
-        print(("%s \n\t\t\t%s\n" % (banner, msg)))
+        print("%s \n\t\t\t%s\n" % (banner, msg))
 
     session = boto3.Session(profile_name=profile)
 
@@ -95,7 +95,7 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
         zoneid = hosted_zone['Id'].split("/")[2]
 
         if args.verbose:
-            print(("Analyzing Route53 ZoneID %s...\n" % zoneid))
+            print ("Analyzing Route53 ZoneID %s...\n" % zoneid)
 
         # Determine if zone is public or private for informational purposes
         if hosted_zone['Config']['PrivateZone']:
@@ -172,10 +172,10 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
 
     if output == "text":
         for result in results:
-            print(("Status: {status}\tZone: {zoneid}\tType: {zonetype}\tHost: {aname}\tAlias: {target}\tDist: {distid}\tName: {dname}\tCNAME: {cname}".format(
-                **result)))
+            print ("Status: {status}\tZone: {zoneid}\tType: {zonetype}\tHost: {aname}\tAlias: {target}\tDist: {distid}\tName: {dname}\tCNAME: {cname}".format(
+                **result))
     else:
-        print(json.dumps(results, indent=4, sort_keys=True))
+        print json.dumps(results, indent=4, sort_keys=True)
 
 
 if __name__ == "__main__":
