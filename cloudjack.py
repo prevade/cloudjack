@@ -89,7 +89,7 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
     results = []
 
     # Enumerate and iterate through all Route53 hosted zone ID's
-    for hosted_zone in sorted(route53.list_hosted_zones()['HostedZones']):
+    for hosted_zone in route53.list_hosted_zones()['HostedZones']:
 
         # Parse ZoneID result
         zoneid = hosted_zone['Id'].split("/")[2]
