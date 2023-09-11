@@ -111,6 +111,8 @@ o888     88  888   ooooooo  oooo  oooo   ooooo888   888   ooooooo    ooooooo   8
 
             # Set name variable to Route53 A record FQDN and truncate trailing dot
             aname = resource_record_set['Name'][:-1]
+            # Replace \052 with * to avoid unexpected octal asterisk in domain name
+            aname = aname.replace(r'\052', '*') 
 
             # Set target variable to the Route53 alias FQDN of CloudFront distribution
             if 'AliasTarget' in resource_record_set and 'DNSName' in resource_record_set['AliasTarget']:
